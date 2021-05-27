@@ -1,9 +1,11 @@
 import tempfile
 from typing import Any, Dict, Optional
 
+import yaml
 from mlflow import pyfunc
 from mlflow.models import Model
 from mlflow.models.model import MLMODEL_FILE_NAME
+from mlflow.pyfunc import ENV
 from mlflow.store.artifact.models_artifact_repo import ModelsArtifactRepository
 from mlflow.tracking.artifact_utils import _download_artifact_from_uri
 from mlflow.utils.file_utils import path_to_local_file_uri
@@ -38,7 +40,14 @@ def _download_model_artifact_file(model_uri: str, file: str, output_path: str):
 
 def _model_config(model_uri: str, output_path: Optional[str] = None) -> Dict[str, Any]:
     model = _load_model_info(model_uri, output_path)
-    cfg = model.flavors.get(pyfunc.FLAVOR_NAME)
-    if not cfg:
+    config = model.flavors.get(pyfunc.FLAVOR_NAME)
+    if not config:
         raise RuntimeError("Only pyfunc flavours are supported")
-    return cfg
+    # Append conda environment definition if found
+    if ENV in config:
+        conda_env_file = _download_model_artifact_file(
+            model_uri, file=config[ENV], output_path=output_path
+        )
+        with open(conda_env_file) as conda_file:
+            config[config[ENV]] = yaml.safe_load(conda_file)
+    return config
