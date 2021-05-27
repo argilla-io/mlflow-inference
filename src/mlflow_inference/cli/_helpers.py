@@ -15,17 +15,29 @@ def _download_model_artifact(model_uri, output_path: Optional[str] = None):
     return path_to_local_file_uri(local_path)
 
 
-def _model_config(model_uri: str) -> Dict[str, Any]:
-    folder = tempfile.TemporaryDirectory()
+def _load_model_info(model_uri: str, output_path: Optional[str] = None) -> Model:
+    tmp_folder = tempfile.TemporaryDirectory()
+    output_path = output_path or tmp_folder.name
+    local_path = _download_model_artifact_file(
+        model_uri, MLMODEL_FILE_NAME, output_path
+    )
+    return Model.load(local_path)
+
+
+def _download_model_artifact_file(model_uri: str, file: str, output_path: str):
     if ModelsArtifactRepository.is_models_uri(model_uri):
         underlying_model_uri = ModelsArtifactRepository.get_underlying_uri(model_uri)
     else:
         underlying_model_uri = model_uri
     local_path = _download_artifact_from_uri(
-        append_to_uri_path(underlying_model_uri, MLMODEL_FILE_NAME),
-        output_path=folder.name,
+        append_to_uri_path(underlying_model_uri, file),
+        output_path=output_path,
     )
-    model = Model.load(local_path)
+    return local_path
+
+
+def _model_config(model_uri: str, output_path: Optional[str] = None) -> Dict[str, Any]:
+    model = _load_model_info(model_uri, output_path)
     cfg = model.flavors.get(pyfunc.FLAVOR_NAME)
     if not cfg:
         raise RuntimeError("Only pyfunc flavours are supported")
