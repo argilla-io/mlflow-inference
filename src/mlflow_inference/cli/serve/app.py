@@ -1,5 +1,4 @@
 import logging
-import tempfile
 from typing import Any, List
 
 import pandas
@@ -24,17 +23,17 @@ def init(model_uri: str) -> FastAPI:
 
     app = FastAPI(redoc_url=None, openapi_url="/api/spec.json", docs_url="/api/doc")
 
-    def status():
+    async def status():
         if model is None:
             raise HTTPException(
                 status_code=404, detail=f"Model not initialized. {load_message}"
             )
         return {"ok": True}
 
-    def model_config():
+    async def model_config():
         return config
 
-    def predict(data: List[Any]) -> List[Any]:
+    async def predict(data: List[Any]) -> List[Any]:
         df = pandas.DataFrame(data)
         response = model.predict(df)
         return response.to_dict(orient="records")
