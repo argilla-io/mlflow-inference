@@ -79,9 +79,12 @@ FROM continuumio/miniconda3:latest
 
 SHELL ["/bin/bash", "-c"]
 
-RUN apt-get -y update && apt-get install -y --no-install-recommends \
-         cmake \
-         build-essential \
+RUN apt-get -y update \
+    && apt-get -y upgrade \
+    && apt-get install -y --no-install-recommends \
+        cmake \
+        build-essential \
+    && apt-get -y autoremove \
     && rm -rf /var/lib/apt/lists/*
 
 # Set up the program in the image
